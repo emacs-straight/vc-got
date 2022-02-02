@@ -6,7 +6,7 @@
 ;;         Timo Myyrä <timo.myyra@bittivirhe.fi>
 ;; URL: https://git.omarpolo.com/vc-got/
 ;; Keywords: vc tools
-;; Version: 1.0
+;; Version: 1.1
 ;; Package-Requires: ((emacs "25.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -515,7 +515,6 @@ FILES is nil, consider all the files in DIR."
       'mouse-face 'highlight
       'keymap (vc-got--with-emacs-version<= "28.0.50"
                 vc-dir-status-mouse-map))
-
      "   " (propertize
             (if stage-state
                 (format "%c" stage-state)
@@ -646,9 +645,6 @@ It's like `vc-process-filter' but supports \r inside S."
                         " " t)
                      (list cmd op)))
       (apply #'vc-do-async-command buffer default-directory cmd)
-      ;; this comes from vc-git.el.  We're using git to push, so in
-      ;; part it makes sense, but we should revisit for full Got
-      ;; support.
       (with-current-buffer buffer
         (vc-compilation-mode 'got)
         (let ((comp-cmd (mapconcat #'identity cmd " "))
@@ -664,8 +660,8 @@ It's like `vc-process-filter' but supports \r inside S."
       (vc-set-async-update buffer))))
 
 ;; TODO: this could be expanded.  After a pull the worktree needs to
-;; be updated, either with a ``got update -b branch-name'' and
-;; eventually a rebase.
+;; be updated, either with a ``got update -b branch-name'' or ``got
+;; update -b remote/branchname'' plus a rebase.
 (defun vc-got-pull (prompt)
   "Execute a pull prompting for the full command if PROMPT is not nil."
   (vc-got--push-pull vc-got-program "fetch" prompt))
@@ -703,7 +699,8 @@ START-REVISION."
       (vc-got--log nil nil nil rl))))
 
 (defun vc-got-incoming (buffer remote-location)
-  "Fill BUFFER with the diff between the REMOTE-LOCATION and the local worktree branch."
+  "Fill BUFFER with the incoming diff from REMOTE-LOCATION.
+That is, the diff between REMOTE-LOCATION and the local repository."
   (let ((rl (if (or (not remote-location) (string-empty-p remote-location))
                 (concat "origin/" (vc-got--current-branch))
               remote-location))
@@ -795,7 +792,6 @@ revisions''; instead, like with git, you have tags and branches."
           "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) " ; year-mm-dd
           "\\([^ ]\\)+ ")    ; author
   "Regexp to match annotation output lines.
-
 Provides capture groups for:
 1. revision id
 2. date of commit
@@ -812,7 +808,7 @@ Value is returned as floating point fractional number of days."
   ;; instead of looking-at, as it makes the fontification of the line
   ;; start AFTER the info.  The problem is, due to the format of the
   ;; blame, it produces an ugly result, with colors starting at
-  ;; different offsets depending on how long the commiter name is.
+  ;; different offsets depending on how long the committer name is.
   (when (looking-at vc-got--annotate-re)
     (let ((str (match-string-no-properties 2)))
       (vc-annotate-convert-time
