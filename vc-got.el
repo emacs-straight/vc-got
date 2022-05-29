@@ -1,12 +1,12 @@
 ;;; vc-got.el --- VC backend for Game of Trees VCS   -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2022  Free Software Foundation, Inc.
 
 ;; Author: Omar Polo <op@omarpolo.com>
 ;;         Timo Myyrä <timo.myyra@bittivirhe.fi>
-;; URL: https://git.omarpolo.com/vc-got/
+;; URL: https://projects.omarpolo.com/vc-got.html
 ;; Keywords: vc tools
-;; Version: 1.1
+;; Version: 1.1.1
 ;; Package-Requires: ((emacs "25.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -24,9 +24,9 @@
 
 ;;; Commentary:
 
-;; This file contains a VC backend for the Game of Trees (got) version
-;; control system.
-
+;; vc-got is a VC backend for the Game of Trees (got) version control
+;; system.
+;;
 ;; Backend implementation status
 ;;
 ;; Function marked with `*' are required, those with `-' are optional.
@@ -118,6 +118,8 @@
 ;; - conflicted-files                   DONE
 ;; - repository-url                     DONE
 
+;;; Code:
+
 ;; TODO: vc-git has most function that starts with:
 ;;
 ;;    (let* ((root (vc-git-root default-directory))
@@ -127,8 +129,6 @@
 ;;
 ;; we should 1) investigate if also other backends do something like
 ;; this (or if there is a better way) and 2) try to do the same.
-
-;;; Code:
 
 (eval-when-compile
   (require 'subr-x))
@@ -246,7 +246,7 @@ worktree."
           t)))))
 
 (defun vc-got--status (status-codes dir-or-file &optional files)
-  "Return a list of lists '(FILE STATUS STAGE-STATUS).
+  "Return a list of lists (FILE STATUS STAGE-STATUS).
 DIR-OR-FILE can be either a directory or a file.  If FILES is
 given, return the status of those files, otherwise the status of
 DIR-OR-FILE.  STATUS-CODES is either nil, or a string that's
@@ -401,10 +401,9 @@ files on disk."
   (let (process-file-side-effects)
     (vc-got-with-worktree default-directory
       (with-temp-buffer
-        (if (zerop (vc-got--call "branch" "--" name))
-            t
-          (error "[vc-got] can't create branch %s: %s" name
-                 (buffer-string)))))))
+        (or (zerop (vc-got--call "branch" "--" name))
+            (error "[vc-got] can't create branch %s: %s" name
+                   (buffer-string)))))))
 
 
 ;; Backend properties
@@ -432,8 +431,7 @@ files on disk."
       nil                               ; got doesn't track directories
     (when (vc-find-root file ".got")
       (let ((s (vc-got-state file)))
-        (not (or (eq s 'unregistered)
-                 (null s)))))))
+        (not (memq s '(nil unregistered)))))))
 
 (defun vc-got-state (file)
   "Return the current version control state of FILE.  See `vc-state'."
@@ -663,12 +661,11 @@ It's like `vc-process-filter' but supports \r inside S."
 ;; be updated, either with a ``got update -b branch-name'' or ``got
 ;; update -b remote/branchname'' plus a rebase.
 (defun vc-got-pull (prompt)
-  "Execute a pull prompting for the full command if PROMPT is not nil."
+  "Execute a fetch prompting for the full command if PROMPT is not nil."
   (vc-got--push-pull vc-got-program "fetch" prompt))
 
 (defun vc-got-push (prompt)
-  "Run git push (not got!) in the repository dir.
-If PROMPT is non-nil, prompt for the git command to run."
+  "Execute a send prompting for the full command if PROMPT is not nil."
   (vc-got--push-pull vc-got-program "send" prompt))
 
 
