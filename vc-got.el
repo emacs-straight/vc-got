@@ -691,8 +691,8 @@ It's like `vc-process-filter' but supports \r inside S."
   "Insert the revision log for FILES into BUFFER.
 LIMIT limits the number of commits, optionally starting at
 START-REVISION."
+  (vc-setup-buffer buffer)
   (with-current-buffer buffer
-    ;; the *vc-diff* may be read only
     (let ((inhibit-read-only t))
       (cl-loop for file in files
                do (vc-got--log (file-relative-name file)
@@ -711,9 +711,10 @@ START-REVISION."
     (with-current-buffer buffer
       (vc-got--log nil nil nil rl))))
 
-(defun vc-got-incoming (buffer remote-location)
+(defun vc-got-log-incoming (buffer remote-location)
   "Fill BUFFER with the incoming diff from REMOTE-LOCATION.
 That is, the diff between REMOTE-LOCATION and the local repository."
+  (vc-setup-buffer buffer)
   (let ((rl (if (or (not remote-location) (string-empty-p remote-location))
                 (concat "origin/" (vc-got--current-branch))
               remote-location))
