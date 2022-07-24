@@ -693,11 +693,12 @@ LIMIT limits the number of commits, optionally starting at
 START-REVISION."
   (vc-setup-buffer buffer)
   (with-current-buffer buffer
-    (let ((inhibit-read-only t))
-      (cl-loop for file in files
-               do (vc-got--log (file-relative-name file)
-                               limit
-                               start-revision)))))
+    (let ((worktree-path (vc-got-root default-directory))
+          (inhibit-read-only t))
+      (dolist (file files)
+        (vc-got--log (file-relative-name file worktree-path)
+                     limit
+                     start-revision)))))
 
 (defun vc-got-log-outgoing (buffer remote-location)
   "Fill BUFFER with the diff between the local worktree branch and REMOTE-LOCATION."
